@@ -2,26 +2,27 @@ import requests
 
 
 class AbstractAnkiControl:
+    def __init__(self, deck_name="", model_name=""):
+        self.deckName = deck_name
+        self.modelName = model_name
+
     def add_deck(self, word_info: dict):
         pass
 
 
 class AnkiControlLocal(AbstractAnkiControl):
-    def add_deck(self, word_info: dict):
+    def __init__(self, deck_name="", model_name=""):
+        super(AnkiControlLocal, self).__init__(deck_name, model_name)
+
+    def add_deck(self, word_info: dict, tags: dict = {}):
         m_data = {
             'action': 'addNote', 'params': {
                 'note': {
-                    'fields': {
-                        'expression': word_info['content'],
-                        'glossary': word_info['definition'],
-                        'sentence': word_info['sentence'],
-                        'reading': word_info['pronunciation']
-                    },
-                    'tags': {},
-                    'deckName': 'paper::paperWords',
-                    'modelName': 'Facebook'
+                    'fields': word_info,
+                    'tags': tags,
+                    'deckName': self.deckName,
+                    'modelName': self.modelName
                 }
             }
         }
-        r = requests.post('http://127.0.0.1:8765', json=m_data)
-        r.status_code
+        requests.post('http://127.0.0.1:8765', json=m_data)

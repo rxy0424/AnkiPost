@@ -10,8 +10,6 @@ from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtCore import QThread
 from PyQt5.QtCore import pyqtSignal
 
-import requests
-
 
 class WordInfoThread(QThread):
     getWord = pyqtSignal(dict)
@@ -41,7 +39,7 @@ class MainWindow(QWidget):
         self.wordInfoThread = WordInfoThread(infoSource=InfoSourceShanbay())
         self.wordInfoThread.getWord.connect(self.has_get_word_info)
 
-        self.ankicontrol = AnkiControlLocal()
+        self.ankicontrol = AnkiControlLocal(deck_name="paper::paperWords", model_name="Facebook")
 
     def add_deck(self, word_info: dict):
         self.ankicontrol.add_deck(word_info)
@@ -65,7 +63,7 @@ class MainWindow(QWidget):
     def has_get_word_info(self, word_info: dict):
         if len(word_info) > 0:
             self.add_deck(word_info)
-            self.ui.textBrowser_meaning.setText(word_info['definition'])
+            self.ui.textBrowser_meaning.setText(word_info['glossary'])
         else:
             self.ui.textBrowser_meaning.setText("no word")
         self.ui.sentence_textEdit.setEnabled(True)
