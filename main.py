@@ -1,4 +1,6 @@
 import mainwindow
+from infosource import InfoSource, InfoSourceShanbay
+from ankicontrol import AbstractAnkiControl, AnkiControlLocal
 
 import sys
 
@@ -11,39 +13,21 @@ from PyQt5.QtCore import pyqtSignal
 import requests
 
 
-class WordInfoFromInternet(QThread):
+class WordInfoThread(QThread):
     getWord = pyqtSignal(dict)
 
-    def __init__(self, parent=None):
-        super(WordInfoFromInternet, self).__init__()
+    def __init__(self, infoSource: InfoSource, parent=None):
+        super(WordInfoThread, self).__init__()
         self.sentence = ''
         self.word = ''
+        self.infoSource = infoSource
 
     def run(self):
         word_info = self.get_word_meaning(self.sentence, self.word)
         self.getWord.emit(word_info)
-        #self.getWord.emit("abc")
 
-    def get_word_meaning(self, sentence, word):
-        word_info = {}
-        dict_usr = 'https://api.shanbay.com/bdc/search/?word='+word
-        try:
-            r = requests.get(dict_usr, timeout=5)
-        except:
-            return word_info
-
-
-        r_json = r.json()
-        if r_json['status_code'] == 1:
-            print("no word find")
-            #self.ui.textBrowser_meaning.setText("no word find")
-        else:
-            word_info['content'] = r_json['data']['content']
-            word_info['definition'] = r_json['data']['definition'].replace("\n", "<br>")
-            word_info['pronunciation'] = r_json['data']['pronunciation']
-            word_info['sentence'] = sentence.replace("\n", " ").replace(word, "<b>" + word + "</b>").replace("- ", "")
-            #self.ui.textBrowser_meaning.setText(r_json['data']['definition'])
-        return word_info
+    def get_word_meaning(self, sentence: str, word: str):
+        return self.infoSource.get_word_info(sentence, word)
 
 
 class MainWindow(QWidget):
@@ -54,27 +38,13 @@ class MainWindow(QWidget):
         self.clipboard = clip
         self.clipboard.dataChanged.connect(self.clipboard_changed)
 
-        self.wordInfoFromInternet = WordInfoFromInternet()
-        self.wordInfoFromInternet.getWord.connect(self.has_get_word_info)
+        self.wordInfoThread = WordInfoThread(infoSource=InfoSourceShanbay())
+        self.wordInfoThread.getWord.connect(self.has_get_word_info)
 
-    def add_deck(self, word_info):
-        m_data = {
-            'action': 'addNote', 'params': {
-                'note': {
-                    'fields': {
-                        'expression': word_info['content'],
-                        'glossary': word_info['definition'],
-                        'sentence': word_info['sentence'],
-                        'reading': word_info['pronunciation']
-                    },
-                    'tags': {},
-                    'deckName': 'paper::paperWords',
-                    'modelName': 'Facebook'
-                }
-            }
-        }
-        r = requests.post('http://127.0.0.1:8765', json=m_data)
-        r.status_code
+        self.ankicontrol = AnkiControlLocal()
+
+    def add_deck(self, word_info: dict):
+        self.ankicontrol.add_deck(word_info)
 
     @pyqtSlot()
     def on_pushButton_clicked(self):
@@ -83,16 +53,16 @@ class MainWindow(QWidget):
         if word != '' and sentence != '':
             self.begin_get_word_info(sentence, word)
 
-    def begin_get_word_info(self, sentence, word):
+    def begin_get_word_info(self, sentence: str, word: str):
         self.ui.sentence_textEdit.setDisabled(True)
         self.ui.pushButton.setDisabled(True)
         self.ui.word_lineEdit.setDisabled(True)
-        self.wordInfoFromInternet.sentence = sentence
-        self.wordInfoFromInternet.word = word
-        self.wordInfoFromInternet.start()
+        self.wordInfoThread.sentence = sentence
+        self.wordInfoThread.word = word
+        self.wordInfoThread.start()
 
     @pyqtSlot(dict)
-    def has_get_word_info(self, word_info):
+    def has_get_word_info(self, word_info: dict):
         if len(word_info) > 0:
             self.add_deck(word_info)
             self.ui.textBrowser_meaning.setText(word_info['definition'])
