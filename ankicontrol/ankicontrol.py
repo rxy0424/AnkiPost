@@ -2,6 +2,8 @@ import requests
 
 
 class AbstractAnkiControl:
+    name = "Abstract"
+
     def __init__(self, deck_name="", model_name=""):
         self.deckName = deck_name
         self.modelName = model_name
@@ -11,6 +13,8 @@ class AbstractAnkiControl:
 
 
 class AnkiControlLocal(AbstractAnkiControl):
+    name = "Local"
+
     def __init__(self, deck_name="", model_name=""):
         super(AnkiControlLocal, self).__init__(deck_name, model_name)
 

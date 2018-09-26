@@ -2,6 +2,8 @@ import requests
 
 
 class InfoSource:
+    name = "Abstract"
+
     def get_word_info(self, sentence: str, word: str) -> dict:
         """
         get word info from target source
@@ -13,6 +15,8 @@ class InfoSource:
 
 
 class InfoSourceShanbay(InfoSource):
+    name = "Shanbay"
+
     def get_word_info(self, sentence: str, word: str) -> dict:
         word_info = {}
         dict_usr = 'https://api.shanbay.com/bdc/search/?word='+word
